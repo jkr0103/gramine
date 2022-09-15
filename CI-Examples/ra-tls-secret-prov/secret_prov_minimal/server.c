@@ -6,8 +6,8 @@
 #include "secret_prov.h"
 
 #define PORT "4433"
-#define SRV_CRT_PATH "../ssl/server.crt"
-#define SRV_KEY_PATH "../ssl/server.key"
+#define SRV_CRT_PATH "ssl/server.crt"
+#define SRV_KEY_PATH "ssl/server.key"
 
 int main(void) {
     uint8_t secret[] = "A_SIMPLE_SECRET";

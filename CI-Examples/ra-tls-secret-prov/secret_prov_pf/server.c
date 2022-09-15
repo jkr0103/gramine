@@ -15,8 +15,8 @@
 
 #include "secret_prov.h"
 
-#define SRV_CRT_PATH "../ssl/server.crt"
-#define SRV_KEY_PATH "../ssl/server.key"
+#define SRV_CRT_PATH "ssl/server.crt"
+#define SRV_KEY_PATH "ssl/server.key"
 
 static pthread_mutex_t g_print_lock;
 

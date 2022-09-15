@@ -20,8 +20,8 @@
 #define FIRST_SECRET "FIRST_SECRET"
 #define SECOND_SECRET "42" /* answer to ultimate question of life, universe, and everything */
 
-#define SRV_CRT_PATH "../ssl/server.crt"
-#define SRV_KEY_PATH "../ssl/server.key"
+#define SRV_CRT_PATH "ssl/server.crt"
+#define SRV_KEY_PATH "ssl/server.key"
 
 static pthread_mutex_t g_print_lock;
 
