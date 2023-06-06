@@ -223,6 +223,8 @@ static bool handle_ud(sgx_cpu_context_t* uc) {
             log_always("Emulating a raw syscall instruction. This degrades performance, consider"
                        " patching your application to use Gramine syscall API.");
         }
+
+        log_always("Emulating a raw syscall instruction.Syscall number is %lu, rip is %p", uc->rax, (void*)(uc->rip));
         return false;
     }
 
