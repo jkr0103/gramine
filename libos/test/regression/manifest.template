@@ -10,6 +10,9 @@ sys.insecure__allow_eventfd = true
 # for flock_lock test
 sys.experimental__enable_flock = true
 
+# for untrusted shared memory test (`shm.c`)
+sys.insecure__shared_memory = "passthrough"
+
 fs.mounts = [
   { path = "/lib", uri = "file:{{ gramine.runtimedir(libc) }}" },
   { path = "/{{ entrypoint }}", uri = "file:{{ binary_dir }}/{{ entrypoint }}" },

@@ -17,12 +17,14 @@
 #include "pal_flags_conv.h"
 #include "pal_internal.h"
 #include "pal_linux.h"
+#include "path_utils.h"
 #include "perm.h"
 
 static int dev_open(PAL_HANDLE* handle, const char* type, const char* uri, enum pal_access access,
                     pal_share_flags_t share, enum pal_create_mode create,
                     pal_stream_options_t options) {
     int ret;
+    char* normpath = NULL;
 
     if (strcmp(type, URI_TYPE_DEV))
         return -PAL_ERROR_INVAL;
@@ -53,6 +55,22 @@ static int dev_open(PAL_HANDLE* handle, const char* type, const char* uri, enum 
         }
     } else {
         /* other devices must be opened through the host */
+
+        /* normalize uri into normpath */
+        size_t normpath_size = strlen(uri) + 1;
+        normpath = malloc(normpath_size);
+        if (!normpath){
+            ret = -PAL_ERROR_NOMEM;
+            goto fail;
+        }
+
+        ret = get_norm_path(uri, normpath, &normpath_size);
+        if (ret < 0) {
+            log_warning("Could not normalize path (%s): %s", uri, pal_strerror(ret));
+            ret = -PAL_ERROR_DENIED;
+            goto fail;
+        }
+
         hdl->dev.nonblocking = !!(options & PAL_OPTION_NONBLOCK);
 
         ret = DO_SYSCALL(open, uri, PAL_ACCESS_TO_LINUX_OPEN(access)  |
@@ -64,7 +82,9 @@ static int dev_open(PAL_HANDLE* handle, const char* type, const char* uri, enum 
             ret = unix_to_pal_error(ret);
             goto fail;
         }
-        hdl->dev.fd = ret;
+
+        hdl->dev.realpath = normpath;
+        hdl->dev.fd       = ret;
 
         if (access == PAL_ACCESS_RDONLY) {
             hdl->flags |= PAL_HANDLE_FD_READABLE;
@@ -80,6 +100,7 @@ static int dev_open(PAL_HANDLE* handle, const char* type, const char* uri, enum 
     return 0;
 fail:
     free(hdl);
+    free(normpath);
     return ret;
 }
 
@@ -119,9 +140,48 @@ static int dev_close(PAL_HANDLE handle) {
     int ret = 0;
     if (handle->dev.fd != PAL_IDX_POISON && handle->dev.fd != 0 && handle->dev.fd != 1) {
         ret = DO_SYSCALL(close, handle->dev.fd);
+        free(handle->dev.realpath);
     }
     handle->dev.fd = PAL_IDX_POISON;
     return ret < 0 ? unix_to_pal_error(ret) : 0;
+}
+
+static int dev_delete(PAL_HANDLE handle, enum pal_delete_mode delete_mode) {
+    if (handle->hdr.type != PAL_TYPE_DEV)
+        return -PAL_ERROR_INVAL;
+
+    if (delete_mode != PAL_DELETE_ALL)
+        return -PAL_ERROR_INVAL;
+
+    if (!handle->dev.realpath)
+        return -PAL_ERROR_INVAL;
+
+    int ret = DO_SYSCALL(unlink, handle->dev.realpath);
+    return ret < 0 ? unix_to_pal_error(ret) : ret;
+}
+
+static int dev_map(PAL_HANDLE handle, void* addr, pal_prot_flags_t prot, uint64_t offset,
+                   uint64_t size) {
+    if (handle->hdr.type != PAL_TYPE_DEV)
+        return -PAL_ERROR_INVAL;
+
+    if (!handle->dev.realpath)
+        return -PAL_ERROR_INVAL;
+
+    assert(IS_ALLOC_ALIGNED(offset) && IS_ALLOC_ALIGNED(size));
+
+    uint64_t dummy;
+    if (__builtin_add_overflow(offset, size, &dummy)) {
+        return -PAL_ERROR_INVAL;
+    }
+
+    void* mapped_addr = (void*)DO_SYSCALL(mmap, addr, size, PAL_PROT_TO_LINUX(prot),
+                                          MAP_SHARED | MAP_FIXED, handle->dev.fd, offset);
+    if (IS_PTR_ERR(mapped_addr))
+        return unix_to_pal_error(PTR_TO_ERR(mapped_addr));
+
+    assert(mapped_addr == addr);
+    return 0;
 }
 
 static int dev_flush(PAL_HANDLE handle) {
@@ -163,7 +223,7 @@ static int dev_attrquery(const char* type, const char* uri, PAL_STREAM_ATTR* att
 }
 
 static int dev_attrquerybyhdl(PAL_HANDLE handle, PAL_STREAM_ATTR* attr) {
-    if (handle->hdr.type != PAL_TYPE_DEV)
+    if (handle->hdr.type != PAL_TYPE_DEV || handle->dev.fd == PAL_IDX_POISON)
         return -PAL_ERROR_INVAL;
 
     if (handle->dev.fd == 0 || handle->dev.fd == 1) {
@@ -181,23 +241,24 @@ static int dev_attrquerybyhdl(PAL_HANDLE handle, PAL_STREAM_ATTR* attr) {
         attr->pending_size = stat_buf.st_size;
     }
 
-    attr->handle_type  = PAL_TYPE_DEV;
-    attr->nonblocking  = handle->dev.nonblocking;
+    attr->handle_type = PAL_TYPE_DEV;
+    attr->nonblocking = handle->dev.nonblocking;
     return 0;
 }
 
-/* this dummy function is implemented to support opening TTY devices with O_TRUNC flag */
 static int64_t dev_setlength(PAL_HANDLE handle, uint64_t length) {
-    if (handle->hdr.type != PAL_TYPE_DEV)
+    if (handle->hdr.type != PAL_TYPE_DEV || handle->dev.fd == PAL_IDX_POISON)
         return -PAL_ERROR_INVAL;
 
-    if (!(handle->dev.fd == 0 || handle->dev.fd == 1))
-        return -PAL_ERROR_NOTSUPPORT;
+    if (!handle->dev.realpath) {
+        /* TTY devices opened with O_TRUNC flag */
+        if (length != 0)
+            return -PAL_ERROR_INVAL;
+        return 0;
+    }
 
-    if (length != 0)
-        return -PAL_ERROR_INVAL;
-
-    return 0;
+    int ret = DO_SYSCALL(ftruncate, handle->dev.fd, length);
+    return ret < 0 ? unix_to_pal_error(ret) : (int64_t)length;
 }
 
 struct handle_ops g_dev_ops = {
@@ -205,6 +266,8 @@ struct handle_ops g_dev_ops = {
     .read           = &dev_read,
     .write          = &dev_write,
     .close          = &dev_close,
+    .delete         = &dev_delete,
+    .map            = &dev_map,
     .setlength      = &dev_setlength,
     .flush          = &dev_flush,
     .attrquery      = &dev_attrquery,

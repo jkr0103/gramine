@@ -116,6 +116,9 @@ tests = {
     'shared_object': {
         'pie': true,
     },
+    'shm': {
+        'link_args': '-lrt',
+    },
     'sid': {},
     'sigaction_per_process': {},
     'sigaltstack': {},
