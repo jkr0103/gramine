@@ -713,6 +713,9 @@ static int check_futex_ptr(uint32_t* ptr, bool check_write) {
 
 static int _libos_syscall_futex(uint32_t* uaddr, int op, uint32_t val, void* utime, uint32_t* uaddr2,
                                 uint32_t val3) {
+    if (!strcmp(g_pal_public_state->host_type, "Linux"))
+        return PalDoFutex(uaddr, op, val, utime, uaddr2, val3);
+
     int cmd = op & FUTEX_CMD_MASK;
     bool no_timeout = true;
     uint64_t timeout = 0;

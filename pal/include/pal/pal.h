@@ -803,6 +803,8 @@ void PalEventClear(PAL_HANDLE handle);
  */
 int PalEventWait(PAL_HANDLE handle, uint64_t* timeout_us);
 
+int PalDoFutex(uint32_t * uaddr, int op, uint32_t val, void* utime, uint32_t* uaddr2, uint32_t val3);
+
 typedef uint32_t pal_wait_flags_t; /* bitfield */
 #define PAL_WAIT_READ     1
 #define PAL_WAIT_WRITE    2

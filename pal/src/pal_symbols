@@ -12,6 +12,7 @@ PalEventCreate
 PalEventSet
 PalEventClear
 PalEventWait
+PalDoFutex
 PalStreamsWaitEvents
 PalStreamOpen
 PalStreamRead

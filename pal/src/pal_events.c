@@ -26,3 +26,8 @@ int PalEventWait(PAL_HANDLE handle, uint64_t* timeout_us) {
     assert(handle && handle->hdr.type == PAL_TYPE_EVENT);
     return _PalEventWait(handle, timeout_us);
 }
+
+int PalDoFutex(uint32_t * uaddr, int op, uint32_t val, void* utime, uint32_t* uaddr2,
+               uint32_t val3) {
+    return  _PalDoFutex(uaddr, op, val, utime, uaddr2, val3);
+}

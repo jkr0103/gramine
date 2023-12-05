@@ -25,6 +25,11 @@ int _PalEventWait(PAL_HANDLE handle, uint64_t* timeout_us) {
     return -PAL_ERROR_NOTIMPLEMENTED;
 }
 
+int _PalDoFutex(uint32_t * uaddr, int op, uint32_t val, void* utime, uint32_t* uaddr2,
+               uint32_t val3) {
+    return -PAL_ERROR_NOTIMPLEMENTED;
+}
+
 static void event_destroy(PAL_HANDLE handle) {
     /* noop */
 }

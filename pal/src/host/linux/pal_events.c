@@ -105,4 +105,9 @@ int _PalEventWait(PAL_HANDLE handle, uint64_t* timeout_us) {
     return ret;
 }
 
+int _PalDoFutex(uint32_t * uaddr, int op, uint32_t val, void* utime, uint32_t* uaddr2,
+               uint32_t val3) {
+    return DO_SYSCALL(futex, uaddr, op, val, utime, uaddr2, val3);
+}
+
 struct handle_ops g_event_ops = {};

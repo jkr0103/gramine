@@ -212,6 +212,7 @@ int _PalEventCreate(PAL_HANDLE* handle_ptr, bool init_signaled, bool auto_clear)
 void _PalEventSet(PAL_HANDLE handle);
 void _PalEventClear(PAL_HANDLE handle);
 int _PalEventWait(PAL_HANDLE handle, uint64_t* timeout_us);
+int _PalDoFutex(uint32_t * uaddr, int op, uint32_t val, void* utime, uint32_t* uaddr2, uint32_t val3);
 
 /* PalVirtualMemory calls */
 int _PalVirtualMemoryAlloc(void* addr, uint64_t size, pal_prot_flags_t prot);
