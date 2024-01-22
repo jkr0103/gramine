@@ -26,6 +26,7 @@ noreturn void libos_emulate_syscall(PAL_CONTEXT* context) {
 
     unsigned long sysnr = pal_context_get_syscall(context);
     arch_syscall_arg_t ret = 0;
+    static int syscall_table[LIBOS_SYSCALL_BOUND] = {0};
 
     if (sysnr == GRAMINE_CUSTOM_SYSCALL_NR) {
         unsigned long args[] = { ALL_SYSCALL_ARGS(context) };
@@ -40,9 +41,16 @@ noreturn void libos_emulate_syscall(PAL_CONTEXT* context) {
         LIBOS_TCB_SET(context.syscall_nr, sysnr);
         six_args_syscall_t syscall_func = (six_args_syscall_t)libos_syscall_table[sysnr];
 
-        debug_print_syscall_before(sysnr, ALL_SYSCALL_ARGS(context));
+        if(++syscall_table[sysnr] % 10000 == 0)
+            for (int i = 0; i < 451; i++)
+                if(syscall_table[i] >= 10000)
+                    log_always("libos_syscall_table[%d]=%d", i, syscall_table[i]);
+
+        if (sysnr != 228 && sysnr != 230 && sysnr != 202)
+            debug_print_syscall_before(sysnr, ALL_SYSCALL_ARGS(context));
         ret = syscall_func(ALL_SYSCALL_ARGS(context));
-        debug_print_syscall_after(sysnr, ret, ALL_SYSCALL_ARGS(context));
+        if(sysnr != 228 && sysnr != 230 && sysnr != 202)
+            debug_print_syscall_after(sysnr, ret, ALL_SYSCALL_ARGS(context));
     }
 out:
     pal_context_set_retval(context, ret);

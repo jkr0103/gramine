@@ -145,8 +145,11 @@ enum {
 };
 
 /* Filenames for saved data */
-#define SGX_PROFILE_FILENAME "sgx-perf.data"
-#define SGX_PROFILE_FILENAME_WITH_PID "sgx-perf-%d.data"
+// #define SGX_PROFILE_FILENAME "sgx-perf.data"
+// #define SGX_PROFILE_FILENAME_WITH_PID "sgx-perf-%d.data"
+
+#define SGX_PROFILE_FILENAME "sgx-perf-%lu.data"
+#define SGX_PROFILE_FILENAME_WITH_PID "sgx-perf-%d-%lu.data"
 
 /* Initialize based on g_pal_enclave settings */
 int sgx_profile_init(void);

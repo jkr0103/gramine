@@ -181,12 +181,33 @@ static void handle_async_signal(int signum, siginfo_t* info, struct ucontext* uc
     }
 }
 
+
 static void handle_dummy_signal(int signum, siginfo_t* info, struct ucontext* uc) {
     __UNUSED(signum);
     __UNUSED(info);
     __UNUSED(uc);
     /* we need this handler to interrupt blocking syscalls in RPC threads */
 }
+
+#ifdef DEBUG
+static void handle_async_sigusr1_signal(int signum, siginfo_t* info, struct ucontext* uc) {
+    __UNUSED(signum);
+    __UNUSED(info);
+    __UNUSED(uc);
+
+    if (g_pal_enclave.profile_enable) {
+        sgx_profile_finish();
+        sgx_profile_init();
+    }
+
+    /* Report all ELFs already loaded (host part of PAL and dynamic libraries used by it) */
+    struct debug_map* map = g_debug_map;
+    while (map) {
+        sgx_profile_report_elf(map->name, map->addr);
+        map = map->next;
+    }
+}
+#endif /* DEBUG */
 
 int sgx_signal_setup(void) {
     int ret;
@@ -235,6 +256,12 @@ int sgx_signal_setup(void) {
     ret = block_signal(SIGUSR2, /*block=*/true);
     if (ret < 0)
         goto err;
+
+#ifdef DEBUG
+    ret = set_signal_handler(SIGUSR1, handle_async_sigusr1_signal);
+    if (ret < 0)
+        goto err;
+#endif /* DEBUG */
 
     ret = 0;
 err:
