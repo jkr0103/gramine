@@ -48,17 +48,17 @@ rpc_queue_t* g_rpc_queue = NULL;
 static long sgx_exitless_ocall(uint64_t code, void* ocall_args) {
     static int ocall_syscall_table[451] = {0};
     bool newline                        = false;
-    if (++ocall_syscall_table[code] % 10000 == 0) {
-        for (int i = 0; i < 451; i++) {
-            if(ocall_syscall_table[i] >= 10000) {
-                newline = true;
-                log_always("ocall_syscall_table[%d]=%d", i, ocall_syscall_table[i]);
-            }
-        }
-        if (newline) {
-            log_always("\n");
-        }
-    }
+    // if (++ocall_syscall_table[code] % 20000 == 0) {
+    //     for (int i = 0; i < 451; i++) {
+    //         if(ocall_syscall_table[i] >= 10000) {
+    //             newline = true;
+    //             log_always("jk:ocall_syscall_table[%d]=%d", i, ocall_syscall_table[i]);
+    //         }
+    //     }
+    //     if (newline) {
+    //         log_always("\n");
+    //     }
+    // }
 
     /* perform OCALL with enclave exit if no RPC queue (i.e., no exitless); no need for atomics
      * because this pointer is set only once at enclave initialization */

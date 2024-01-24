@@ -41,16 +41,16 @@ noreturn void libos_emulate_syscall(PAL_CONTEXT* context) {
         LIBOS_TCB_SET(context.syscall_nr, sysnr);
         six_args_syscall_t syscall_func = (six_args_syscall_t)libos_syscall_table[sysnr];
 
-        if(++syscall_table[sysnr] % 10000 == 0)
-            for (int i = 0; i < 451; i++)
-                if(syscall_table[i] >= 10000)
-                    log_always("libos_syscall_table[%d]=%d", i, syscall_table[i]);
+        // if(++syscall_table[sysnr] % 20000 == 0  && sysnr != 96 && sysnr != 201 && sysnr != 202)
+        //     for (int i = 0; i < 451; i++)
+        //         if(syscall_table[i] >= 20000)
+        //             log_always("jk:libos_syscall_table[%d]=%d", i, syscall_table[i]);
 
-        if (sysnr != 228 && sysnr != 230 && sysnr != 202)
-            debug_print_syscall_before(sysnr, ALL_SYSCALL_ARGS(context));
+        // if (sysnr != 228 && sysnr != 230 && sysnr != 202)
+        //     debug_print_syscall_before(sysnr, ALL_SYSCALL_ARGS(context));
         ret = syscall_func(ALL_SYSCALL_ARGS(context));
-        if(sysnr != 228 && sysnr != 230 && sysnr != 202)
-            debug_print_syscall_after(sysnr, ret, ALL_SYSCALL_ARGS(context));
+        // if(sysnr != 228 && sysnr != 230 && sysnr != 202)
+        //     debug_print_syscall_after(sysnr, ret, ALL_SYSCALL_ARGS(context));
     }
 out:
     pal_context_set_retval(context, ret);

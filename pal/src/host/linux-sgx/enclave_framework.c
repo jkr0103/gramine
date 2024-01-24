@@ -152,8 +152,8 @@ static void copy_u64s_to_untrusted(void* untrusted_dst, const void* src, size_t 
 }
 
 void sgx_copy_to_enclave_verified(void* ptr, const void* uptr, size_t size) {
-    assert(sgx_is_valid_untrusted_ptr(uptr, size, /*alignment=*/1));
-    assert(sgx_is_completely_within_enclave(ptr, size));
+    // assert(sgx_is_valid_untrusted_ptr(uptr, size, /*alignment=*/1));
+    // assert(sgx_is_completely_within_enclave(ptr, size));
 
     if (size == 0) {
         return;
@@ -213,8 +213,8 @@ bool sgx_copy_to_enclave(void* ptr, size_t maxsize, const void* uptr, size_t usi
 }
 
 void sgx_copy_from_enclave_verified(void* uptr, const void* ptr, size_t size) {
-    assert(sgx_is_completely_within_enclave(ptr, size));
-    assert(sgx_is_valid_untrusted_ptr(uptr, size, /*alignment=*/1));
+    // assert(sgx_is_completely_within_enclave(ptr, size));
+    // assert(sgx_is_valid_untrusted_ptr(uptr, size, /*alignment=*/1));
 
     if (size == 0) {
         return;
