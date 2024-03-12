@@ -642,6 +642,7 @@ static int tf_append_chunk(PAL_HANDLE handle, uint8_t* chunk,
 
     // Add file chunks to cache only if the file is reused for 10 times or more
     if (handle->file.usage_count > 10) {
+        handle->file.usage_count++;
         struct tf_chunk* new_chunk = (struct tf_chunk*)malloc(sizeof(struct tf_chunk));
         if (!new_chunk) {
             return -PAL_ERROR_NOMEM;

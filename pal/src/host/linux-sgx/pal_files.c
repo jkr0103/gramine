@@ -149,8 +149,9 @@ static int file_open(PAL_HANDLE* handle, const char* type, const char* uri,
     hdl->file.total = total;
     hdl->file.umem  = umem;
     hdl->file.tf = tf;
-    log_always("file_open:fd=%d:cache=%p:%s", hdl->file.fd, hdl->file.cache, uri);
     *handle = hdl;
+    log_always("file_open:Count=%ld:fd=%d:cache=%p:%s", hdl->file.usage_count,
+               hdl->file.fd, hdl->file.cache, hdl->file.realpath);
     return 0;
 
 fail:
@@ -190,10 +191,12 @@ static int64_t file_read(PAL_HANDLE handle, uint64_t offset, uint64_t count, voi
     off_t aligned_offset = ALIGN_DOWN(offset, TRUSTED_CHUNK_SIZE);
     off_t aligned_end    = ALIGN_UP(end, TRUSTED_CHUNK_SIZE);
 
-    log_always("file_read:fd=%d:cache=%p:%s", handle->file.fd, handle->file.cache, handle->file.realpath);
     ret = copy_and_verify_trusted_file(handle, handle->file.realpath, buffer,
                                        handle->file.umem, aligned_offset, aligned_end, offset, end,
                                        chunk_hashes, total);
+
+    log_always("file_read:Count=%ld:fd=%d:cache=%p:%s", handle->file.usage_count,
+               handle->file.fd, handle->file.cache, handle->file.realpath);
     if (ret < 0)
         return ret;
 
@@ -233,7 +236,8 @@ static void file_destroy(PAL_HANDLE handle) {
 
     if (g_tf_max_chunks_in_cache > 0 && handle->file.cache) {
         spinlock_lock(&g_trusted_file_lock);
-        log_always("file_destroy:fd=%d:cache=%p:%s", handle->file.fd, handle->file.cache, handle->file.realpath);
+        log_always("file_destroy:Count=%ld:fd=%d:cache=%p:%s", handle->file.usage_count,
+                   handle->file.fd, handle->file.cache, handle->file.realpath);
         struct tf_chunk* chunk;
         while ((chunk = lruc_get_last(handle->file.cache)) != NULL) {
             free(chunk);
